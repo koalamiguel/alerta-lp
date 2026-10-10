@@ -1,0 +1,32 @@
+name: Alerta LP
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # cada 5 min (GitHub a veces lo retrasa unos minutos)
+  workflow_dispatch:         # botón "Run workflow" para probarlo a mano
+
+permissions:
+  contents: write            # para guardar estado.json
+
+concurrency:
+  group: alerta-lp
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Revisar el LP
+        run: python3 alerta_lp.py
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+      - name: Guardar estado
+        run: |
+          git config user.name "alerta-lp"
+          git config user.email "alerta-lp@users.noreply.github.com"
+          git add estado.json
+          git diff --cached --quiet || (git commit -m "estado" && git push)
